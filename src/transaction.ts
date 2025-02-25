@@ -59,17 +59,40 @@ async function generateRandomAddress() {
 async function transfer() {
   while (true) {
     try {
+      // 获取当前账户余额
+      const balance = await client.getBalance({ address: account.address });
+      const amountToSend = parseEther(amountTran);
+
+      // 检查余额是否足够
+      if (balance < amountToSend) {
+        console.log("余额不足，等待充值...");
+        await sleep(1000 * 60); // 等待1分钟后重试
+        continue;
+      }
+
       const randomAddress = await generateRandomAddress();
-      console.log(randomAddress);
+      console.log("目标地址:", randomAddress.address);
+      
       await sleep(1000 * 5);
+      
       const tx = await client.sendTransaction({
         to: randomAddress.address,
-        value: parseEther(amountTran),
+        value: amountToSend,
       });
-      console.log("tx", tx);
-      console.log("Transaction completed");
+      
+      console.log("交易哈希:", tx);
+      
+      // 等待交易确认
+      const receipt = await client.waitForTransactionReceipt({ hash: tx });
+      console.log("交易已确认，区块号:", receipt.blockNumber);
+      
+      // 成功后等待一段时间再进行下一次交易
+      await sleep(1000 * 10);
+      
     } catch (error) {
-      console.error("Failed to create swap:", error);
+      console.error("交易失败:", error);
+      // 发生错误时等待较长时间后重试
+      await sleep(1000 * 30);
     }
   }
 }

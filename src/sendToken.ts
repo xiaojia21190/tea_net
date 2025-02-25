@@ -42,31 +42,68 @@ const walletClient = createWalletClient({
 // ERC-20 代币合约 ABI
 const erc20Abi = parseAbi([
   'function transfer(address to, uint256 amount) external returns (bool)',
-  'function decimals() public view returns (uint8)' // 获取精度
+  'function decimals() public view returns (uint8)',
+  'function balanceOf(address account) external view returns (uint256)'
 ]);
 
 
 async function sendToken(address: `0x${string}`) {
   try {
-    // 创建ERC-20合约实例
     const tokenContract = getContract({
       address: tokenContractAddress,
       abi: erc20Abi,
       client: walletClient
     })
 
-    // 获取 Token 精度
+    // 检查发送者余额
+    const balance = await tokenContract.read.balanceOf([account.address]);
     const decimals = await tokenContract.read.decimals();
-    const amount = ethers.parseUnits(amountToSend, decimals)
-    // 直接调用合约的 transfer 方法
-    const hash = await tokenContract.write.transfer([address, amount])
+    const amount = ethers.parseUnits(amountToSend, decimals);
+
+    if (balance < amount) {
+      throw new Error('余额不足');
+    }
+
+    // 发送代币
+    const hash = await tokenContract.write.transfer([address, amount]);
     console.log('Transaction Hash:', hash);
-    // 等待交易确认
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    console.log('Transaction Receipt:', receipt)
+
+    // 等待交易确认并添加重试机制
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        console.log('Transaction Receipt:', receipt);
+        return receipt;
+      } catch (error) {
+        retries--;
+        if (retries === 0) throw error;
+        await sleep(1000 * 5); // 等待5秒后重试
+      }
+    }
   } catch (error) {
-    console.error('Error sending token:', error);
+    console.error('发送代币失败:', error);
+    throw error; // 向上传递错误
   }
+}
+
+async function send() {
+  const maxAttempts = 100; // 设置最大尝试次数
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    try {
+      const randomAddress = await generateRandomAddress();
+      console.log('生成的随机地址:', randomAddress);
+      await sleep(1000 * 5);
+      await sendToken(randomAddress.address);
+      attempts++;
+    } catch (error) {
+      console.error('发送失败:', error);
+      await sleep(1000 * 10); // 发生错误时等待更长时间
+    }
+  }
+  console.log('达到最大尝试次数，程序结束');
 }
 
 function sleep(ms: number) {
@@ -83,20 +120,6 @@ async function generateRandomAddress() {
     address,
   };
 }
-
-async function send() {
-  while (true) {
-    try {
-      const randomAddress = await generateRandomAddress();
-      console.log(randomAddress);
-      await sleep(1000 * 5);
-      sendToken(randomAddress.address);
-    } catch (error) {
-      console.error('Error sending token:', error);
-    }
-  }
-}
-
 
 export default send;
 
