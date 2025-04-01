@@ -7,22 +7,22 @@ import { ethers } from 'ethers';
 // 配置你的账户和 RPC
 const privateKey = process.env.PRIVATE_KEY
 const rpcUrl = 'https://tea-sepolia.g.alchemy.com/public/'; // 替换为你的 RPC URL (tea 链)
-const tokenContractAddress = '0x9Bae0FEC642CB10794d250A53d42175c447f89BD'; // 替换为你要发送的代币的合约地址
+const tokenContractAddress = '0x696d74090947adC4a080278517aa9bDfE81DEDDe'; // 替换为你要发送的代币的合约地址
 const amountToSend = '0.00001';    //以Token decimals 为单位 (例如，18 decimals, 1 = 1 * 10^18)
 
 
 // 定义 tea 链
 const teaChain = defineChain({
-  id: 10218,      // 请替换 tea 网络的 Chain ID
-  name: 'TeaSepolia',   // 请替换 tea 网络名称
-  network: 'Tea Sepolia',  // 可选： 如果 `tea` 有网络名称
-  nativeCurrency: {  // 请替换 tea 的原生代币
+  id: 10218,      // Chain ID for Tea Sepolia
+  name: 'TeaSepolia',   // Network Name
+  network: 'Tea Sepolia',  // Network Name
+  nativeCurrency: {
     decimals: 18,
-    name: '$TEA',
-    symbol: '$TEA'
+    name: 'TEA',     // Currency Symbol
+    symbol: 'TEA'    // Currency Symbol
   },
   rpcUrls: {
-    default: { http: [rpcUrl] },
+    default: { http: [rpcUrl] }, // Use the updated rpcUrl
   },
 });
 
