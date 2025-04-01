@@ -5,8 +5,8 @@ import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
 
 // 你的私钥，用于签署交易（请勿在生产环境中硬编码私钥！）
 const PRIVATE_KEY = process.env.PRIVATE_KEY
-const rpcUrl = 'https://assam-rpc.tea.xyz/'; // 替换为你的 RPC URL (tea 链)
-const amountTran = '0.00001';    //以Token decimals 为单位 (例如，18 decimals, 1 = 1 * 10^18)
+const rpcUrl = 'https://tea-sepolia.g.alchemy.com/public'; // Public RPC URL for Tea Sepolia
+const amountTran = '0.0000001';    //以Token decimals 为单位 (例如，18 decimals, 1 = 1 * 10^18)
 
 // 检查私钥是否存在
 if (!PRIVATE_KEY) {
@@ -15,16 +15,16 @@ if (!PRIVATE_KEY) {
 
 // 定义 tea 链
 const teaChain = defineChain({
-  id: 93384,      // 请替换 tea 网络的 Chain ID
-  name: 'TeaAssam',   // 请替换 tea 网络名称
-  network: 'tea-assam',  // 可选： 如果 `tea` 有网络名称
-  nativeCurrency: {  // 请替换 tea 的原生代币
+  id: 10218,      // Chain ID for Tea Sepolia
+  name: 'TeaSepolia',   // Network Name
+  network: 'Tea Sepolia',  // Network Name
+  nativeCurrency: {
     decimals: 18,
-    name: '$TEA',
-    symbol: '$TEA'
+    name: 'TEA',     // Currency Symbol
+    symbol: 'TEA'    // Currency Symbol
   },
   rpcUrls: {
-    default: { http: [rpcUrl] },
+    default: { http: [rpcUrl] }, // Use the updated rpcUrl
   },
 });
 
@@ -72,23 +72,23 @@ async function transfer() {
 
       const randomAddress = await generateRandomAddress();
       console.log("目标地址:", randomAddress.address);
-      
+
       await sleep(1000 * 5);
-      
+
       const tx = await client.sendTransaction({
         to: randomAddress.address,
         value: amountToSend,
       });
-      
+
       console.log("交易哈希:", tx);
-      
+
       // 等待交易确认
       const receipt = await client.waitForTransactionReceipt({ hash: tx });
       console.log("交易已确认，区块号:", receipt.blockNumber);
-      
+
       // 成功后等待一段时间再进行下一次交易
       await sleep(1000 * 10);
-      
+
     } catch (error) {
       console.error("交易失败:", error);
       // 发生错误时等待较长时间后重试

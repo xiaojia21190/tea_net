@@ -3,7 +3,7 @@ import transfer from './transaction';
 
 async function main() {
   await transfer();
-  await send()
+  // await send()
 }
 
 main();
