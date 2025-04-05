@@ -1,11 +1,13 @@
 import "dotenv/config";
 
-import { createWalletClient, http, publicActions, parseEther, defineChain } from "viem";
+import { createWalletClient, http, publicActions, parseEther, defineChain, getContract, parseAbi } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
+import { writeFileSync } from 'fs';
 
 // 你的私钥，用于签署交易（请勿在生产环境中硬编码私钥！）
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 const rpcUrl = 'https://tea-sepolia.g.alchemy.com/public'; // Public RPC URL for Tea Sepolia
+const tokenContractAddress = "0x111";
 const amountTran = '0.0000001';    //以Token decimals 为单位 (例如，18 decimals, 1 = 1 * 10^18)
 
 // 检查私钥是否存在
@@ -28,6 +30,10 @@ const teaChain = defineChain({
   },
 });
 
+const erc20Abi = parseAbi([
+  'function initializeFarm(address player, uint256 plotCount) external',
+]);
+
 // 创建账户
 const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`);
 
@@ -42,6 +48,7 @@ function sleep(ms: number) {
 }
 
 async function generateRandomAddress() {
+
   // 1. 生成随机私钥
   const privateKey = generatePrivateKey();
 
@@ -49,6 +56,14 @@ async function generateRandomAddress() {
   const account = privateKeyToAccount(privateKey);
 
   const address = account.address;
+
+  // 3. 输出到account.txt文件中
+  try {
+    const accountData = JSON.stringify({ privateKey, address }, null, 2);
+    writeFileSync('account.txt', accountData + "\n");
+  } catch (err) {
+    console.error('写入account.txt文件失败:', err);
+  }
 
   return {
     privateKey,
@@ -85,6 +100,32 @@ async function transfer() {
       // 等待交易确认
       const receipt = await client.waitForTransactionReceipt({ hash: tx });
       console.log("交易已确认，区块号:", receipt.blockNumber);
+
+      //交互合约 初始化农场
+      console.log("开始初始化农场");
+      const tokenContract = getContract({
+        address: tokenContractAddress,
+        abi: erc20Abi,
+        client: client
+      })
+
+      const hash = await tokenContract.write.initializeFarm([randomAddress.address, BigInt(10)]);
+
+      console.log('Transaction Hash:', hash);
+
+      // 等待交易确认并添加重试机制
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const receipt = await client.waitForTransactionReceipt({ hash });
+          console.log('Transaction Receipt:', receipt);
+          return receipt;
+        } catch (error) {
+          retries--;
+          if (retries === 0) throw error;
+          await sleep(1000 * 5); // 等待5秒后重试
+        }
+      }
 
       // 成功后等待一段时间再进行下一次交易
       await sleep(1000 * 10);
