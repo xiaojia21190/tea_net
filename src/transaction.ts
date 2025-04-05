@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import { createWalletClient, http, publicActions, parseEther, defineChain, getContract, parseAbi } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-import { writeFileSync } from 'fs';
+import { appendFileSync } from 'fs';
 
 // 你的私钥，用于签署交易（请勿在生产环境中硬编码私钥！）
 const PRIVATE_KEY = process.env.PRIVATE_KEY
@@ -60,7 +60,7 @@ async function generateRandomAddress() {
   // 3. 输出到account.txt文件中
   try {
     const accountData = JSON.stringify({ privateKey, address }, null, 2);
-    writeFileSync('account.txt', accountData + "\n");
+    appendFileSync('account.txt', accountData + '\n', { flag: 'a' }); // 追加写入
   } catch (err) {
     console.error('写入account.txt文件失败:', err);
   }
@@ -111,14 +111,14 @@ async function transfer() {
 
       const hash = await tokenContract.write.initializeFarm([randomAddress.address, BigInt(10)]);
 
-      console.log('Transaction Hash:', hash);
+      console.log('交易哈希:', hash);
 
       // 等待交易确认并添加重试机制
       let retries = 3;
       while (retries > 0) {
         try {
           const receipt = await client.waitForTransactionReceipt({ hash });
-          console.log('Transaction Receipt:', receipt);
+          console.log('交易已确认，区块号:', receipt);
           return receipt;
         } catch (error) {
           retries--;
