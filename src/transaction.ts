@@ -2,12 +2,12 @@ import "dotenv/config";
 
 import { createWalletClient, http, publicActions, parseEther, defineChain, getContract, parseAbi } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-import { appendFileSync } from 'fs';
+import { appendFileSync, readFileSync } from 'fs';
 
 // 你的私钥，用于签署交易（请勿在生产环境中硬编码私钥！）
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 const rpcUrl = 'https://tea-sepolia.g.alchemy.com/public'; // Public RPC URL for Tea Sepolia
-const tokenContractAddress = "0x111";
+const tokenContractAddress = "0x02E54245375ac8c00b568D1E0b2857dC65346178";
 const amountTran = '0.0000001';    //以Token decimals 为单位 (例如，18 decimals, 1 = 1 * 10^18)
 
 // 检查私钥是否存在
@@ -59,8 +59,11 @@ async function generateRandomAddress() {
 
   // 3. 输出到account.txt文件中
   try {
-    const accountData = JSON.stringify({ privateKey, address }, null, 2);
-    appendFileSync('account.txt', accountData + '\n', { flag: 'a' }); // 追加写入
+    // 先读取文件
+    const content = readFileSync('account.txt', 'utf-8');
+    // 追加写入数据
+    const data = `${privateKey},${address}\n`; // 数据内容
+    appendFileSync('account.txt', data, { flag: 'a' }); // 追加写入
   } catch (err) {
     console.error('写入account.txt文件失败:', err);
   }
@@ -87,6 +90,7 @@ async function transfer() {
 
       const randomAddress = await generateRandomAddress();
       console.log("目标地址:", randomAddress.address);
+      console.log("目标私钥:", randomAddress.privateKey);
 
       await sleep(1000 * 5);
 
@@ -119,7 +123,7 @@ async function transfer() {
         try {
           const receipt = await client.waitForTransactionReceipt({ hash });
           console.log('交易已确认，区块号:', receipt);
-          return receipt;
+          retries = 0; // 成功后退出重试循环
         } catch (error) {
           retries--;
           if (retries === 0) throw error;
